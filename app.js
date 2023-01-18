@@ -12,7 +12,9 @@ const IP = execSync
   .replace(/"/g, "");
 
 app.get("/", (req, res) => {
-  res.send("hello world");
+  child.execSync("bash ~/scripts/touchScreenCali.sh", {
+    encoding: "utf-8",
+  });
 });
 
 app.listen(port, IP || "localhost", () => {
