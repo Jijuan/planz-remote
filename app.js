@@ -1,5 +1,7 @@
-const child = require("child_process");
+import child from "child_process";
+import cors from 'cors';
 const express = require("express");
+import { ClientGrpcAccessor } from "./grpc.js"
 const app = express();
 const port = 3000;
 const status = {
@@ -22,6 +24,32 @@ const IP = execSync
   .replace(/(\r\n|\n|\r)/gm, "")
   .replace(/"/g, "");
 
+const options = {
+    protoPath: 'app/pii.proto',
+    target: `${IP || 'localhost'}:5555`,
+    protoLoaderOption: {
+      keepCase: true,
+      longs: String,
+      enums: String,
+      defaults: true,
+      oneofs: true,
+    },
+  };
+let cur_ssid = '';
+const clientGrpcAccessor = new ClientGrpcAccessor(options);
+clientGrpcAccessor.addHandler('data', (message, ssid) => {
+  cur_ssid = ssid;
+  console.error('data: ', message);
+});
+
+clientGrpcAccessor.addHandler('error', (message) => {
+  console.error('error: ', message);
+});
+clientGrpcAccessor.on();
+
+app.use(cors());
+app.options('*', cors())
+
 // 상태 정보
 app.get("/", (req, res) => {
   // updateStatus(status);
@@ -30,6 +58,7 @@ app.get("/", (req, res) => {
 
 // 터치 재보정
 app.get("/touch", (req, res) => {
+  res.send("success");
   child.execSync("bash ~/scripts/touchScreenCali.sh", {
     encoding: "utf-8",
   });
@@ -37,32 +66,88 @@ app.get("/touch", (req, res) => {
 
 // 재부팅
 app.get("/reboot", (req, res) => {
+  res.send("success");
   child.execSync("reboot", {
     encoding: "utf-8",
   });
+
 });
+
+app.get("/pcb-reset", (req, res) => {
+  res.send("success");
+  const data = {ssid: cur_ssid, key: "jobRequest", sender: "remote-server", instructions:[{type:"RESET",version:"0.0.1",requiredModules:[{name:"pcb"}],requiredIngredients:[],data:""}]};
+  const stringifyMessage = JSON.stringify(data);
+  clientGrpcAccessor.write(cur_ssid, stringifyMessage);
+
+});
+
+// 제빙기 리셋
+app.get("/im-reset", (req, res) => {
+  res.send("success");
+  const data = {ssid: cur_ssid, key: "jobRequest", sender: "remote-server", instructions:[{type:"IM_RESET",version:"0.0.1",requiredModules:[{name:"iceMaker"}],requiredIngredients:[],data:""}]};
+  const stringifyMessage = JSON.stringify(data);
+  clientGrpcAccessor.write(cur_ssid, stringifyMessage);
+
+});
+
+app.get("/kiosk-shutdown", (req, res) => {
+ try {
+	  const a = child.execSync("ps -e | grep -c pkb || true", {encoding: "utf-8"}).slice(0, 1);
+	  if (a !== '0') {
+child.exec("killall -9 pkb || true", {
+      encoding: "utf-8",
+    });
+
+	  }
+  } catch(err) {
+    console.log(err.message)
+	  return ;
+  } 
+
+
+})
+
 
 // pii, kiosk 재부팅
 app.get("/restart", async (req, res) => {
-  // kiosk 종료
-  child.execSync("killall -9 pkb", {
-    encoding: "utf-8",
-  });
+  res.send("success");
+  // kiosk 종
+  // const chd = child.spawn('bash ~/scripts/restart.sh');
 
-  await delay(500);
+	console.log('before');
+  try {
+	  const a = child.execSync("ps -e | grep -c pkb || true", {encoding: "utf-8"}).slice(0, 1);
+	  if (a !== '0') {
+child.exec("killall -9 pkb || true", {
+      encoding: "utf-8",
+    });
+
+	  }
+  } catch(err) {
+    console.log(err.message)
+	  return ;
+  } 
+
 
   // pii restart
-  child.execSync("pm2 restart PII", {
-    encoding: "utf-8",
-  });
 
   await delay(1000);
 
   // kiosk 재실행,
-  child.execSync("bash ~/scripts/kiosk-auto.sh", {
+  child.exec("bash ~/scripts/kiosk-auto.sh", {
     encoding: "utf-8",
   });
+try {
+  child.exec("pm2 restart PII || [[ $? == 1 ]]", {
+    encoding: "utf-8",
+  });
+
+  } catch(e){
+	console.log(e.message);
+  return ;
+  }
 });
+  
 
 app.listen(port, IP || "localhost", () => {
   console.log(IP);

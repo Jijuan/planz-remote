@@ -7,10 +7,20 @@
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
+    "dev": "babel-node app.js",
     "start": "node app.js"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "@grpc/grpc-js": "^1.8.4",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "planz-proto": "https://github.com/PLANZ-COFFEE/planz-proto"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@babel/cli": "^7.20.7",
+    "@babel/core": "^7.20.12",
+    "@babel/node": "^7.20.7",
+    "@babel/preset-env": "^7.20.2",
+    "nodemon": "^2.0.20"
+  }
 }

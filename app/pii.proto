@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+service Job {
+  rpc clientStream (stream ClientRequest) returns (stream ServerResponse){};
+}
+
+message ClientRequest {
+  string message = 1;
+}
+
+message ServerResponse {
+  string message = 1;
+}
