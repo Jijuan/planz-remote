@@ -14,6 +14,7 @@
     "@grpc/grpc-js": "^1.8.4",
     "cors": "^2.8.5",
     "express": "^4.18.2",
+    "helmet": "^6.0.1",
     "planz-proto": "https://github.com/PLANZ-COFFEE/planz-proto"
   },
   "devDependencies": {

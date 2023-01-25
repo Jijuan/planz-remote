@@ -1,4 +1,5 @@
 import child from "child_process";
+import helmet from "helmet";
 import cors from "cors";
 const express = require("express");
 import { ClientGrpcAccessor } from "./grpc.js";
@@ -48,6 +49,7 @@ clientGrpcAccessor.addHandler("error", (message) => {
 clientGrpcAccessor.on();
 
 app.use(cors());
+app.use(helmet.frameguard());
 app.options("*", cors());
 
 // 상태 정보
